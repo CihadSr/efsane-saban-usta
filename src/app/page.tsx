@@ -1,65 +1,111 @@
-import Image from "next/image";
+// src/app/page.tsx  // [UPDATED]
+'use client'
+import { useMemo, useState } from 'react'
+import Hero from '@/components/Hero'
+import Navbar from '@/components/Navbar'
+import MenuGrid from '@/components/MenuGrid'
+import CartSheet from '@/components/CartSheet'
+import MobileBar from '@/components/MobileBar'
+import { ITEMS, type Cat } from '@/data/items'
+import useCart from '@/hooks/useCart' // [UPDATED]
 
-export default function Home() {
+export default function Page(){
+  const { add } = useCart() // [UPDATED]
+  const [filter, setFilter] = useState<'all'|Cat>('all')
+  const filtered = useMemo(()=> filter==='all'? ITEMS : ITEMS.filter(i=>i.cat===filter), [filter])
+  const [cartOpen, setCartOpen] = useState(false)
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="pb-28"> {/* MobileBar için alan */}
+      <Navbar onOpenCart={()=>setCartOpen(true)} />
+      <Hero />
+
+      <section id="menu" className="scroll-mt-20 mx-auto max-w-7xl px-4 py-16">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-2xl md:text-4xl font-bold">Menü</h2>
+            <p className="mt-2 text-neutral-300">Meze, et, köfte, sıcak, tatlı, içecek.</p>
+          </div>
+          <div className="text-right hidden md:block">
+            <p className="text-sm text-neutral-400">Pişmiş kilo satış fiyatları</p>
+            <p className="text-lg font-semibold">Kilo Et: 1500 TL • Kilo Köfte: 1100 TL</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="mt-6 flex gap-2 overflow-x-auto whitespace-nowrap snap-x snap-mandatory">
+          {(['all','meze','et','kofte','sicak','tatli','icecek'] as const).map(k => (
+            <button key={k} onClick={()=>setFilter(k)}
+              className={`snap-start rounded-xl border border-white/10 px-4 py-2 text-sm md:text-base ${filter===k ? 'bg-white/10 ring-1 ring-white/20' : ''}`}>
+              {k==='all'?'Tümü':k[0].toUpperCase()+k.slice(1)}
+            </button>
+          ))}
         </div>
-      </main>
-    </div>
-  );
+
+        {/* === KAYAN SARI ŞERİT // [UPDATED] === */}
+        <div className="mt-4 rounded-xl border border-yellow-500/30 bg-yellow-500/15">
+          <div className="ticker">
+            <div className="ticker__content text-yellow-300 font-semibold">
+              <span>🍖 Kilo Et 1500 TL</span>
+              <span>🥩 Kilo Köfte 1100 TL</span>
+              <span>Rakını al gel</span> 
+              <span>Karaburun • İskele Mevkii</span>
+              <span>🍖 Kilo Et 1500 TL</span>
+              <span>🥩 Kilo Köfte 1100 TL</span>
+              <span>BYOB: Rakını al gel</span>
+              <span>Karaburun • İskele Mevkii</span>
+            </div>
+          </div>
+        </div>
+
+        // src/app/page.tsx  // [UPDATED] sadece onAdd satırını değiştir
+<MenuGrid
+  items={filtered}
+  onAdd={(id)=>{
+    document.dispatchEvent(new CustomEvent('cart:add',{detail:{id}})) // paneli açmadan ekle
+    // isteğe bağlı: kısa titreşim
+    if ('vibrate' in navigator) try{ (navigator as any).vibrate(15) }catch{}
+  }}
+/>
+
+      </section>
+
+      <section id="gallery" className="mx-auto max-w-7xl px-4 py-16">
+        <h2 className="text-3xl md:text-4xl font-bold">Galeri</h2>
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[1,2,3,4].map(n => (
+            <img key={n} src={`/media/galeri/${n}.jpg`} className="rounded-2xl h-40 w-full object-cover border border-white/10" alt="galeri" />
+          ))}
+        </div>
+      </section>
+
+      {/* KONUM & İLETİŞİM */}
+      <section id="contact" className="bg-neutral-900/40 border-y border-white/10">
+        <div className="mx-auto max-w-7xl px-4 py-16 grid lg:grid-cols-5 gap-8">
+          <div className="lg:col-span-2">
+            <h2 className="text-3xl md:text-4xl font-bold">İletişim</h2>
+            <div className="mt-4 space-y-3 text-neutral-300">
+              <p><strong>Adres:</strong> Karaburun, İskele Mevkii, İzmir</p>
+              <p><strong>Telefon:</strong> <a className="underline" href="tel:+905530625173">+90 553 062 51 73</a></p>
+              <p><strong>Çalışma saatleri:</strong> 09:00 – 00:00</p>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <a href="tel:+905530625173" className="rounded-2xl bg-sky-500 hover:bg-sky-600 px-5 py-3 font-semibold text-white">Hemen Ara</a>
+              <a href="#menu" className="rounded-2xl border border-white/20 px-5 py-3 font-semibold">Menü</a>
+            </div>
+          </div>
+          <div className="lg:col-span-3 rounded-3xl overflow-hidden border border-white/10 min-h-[320px]">
+            <iframe
+              title="EFSANE ŞABAN USTA — Konum"
+              className="w-full h-full min-h-[320px] map-embed"
+              referrerPolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=EFSANE%20%C5%9EABAN%20USTA%20Karaburun%20%C4%B0skele%20Mevkii&z=16&output=embed">
+            </iframe>
+          </div>
+        </div>
+      </section>
+
+      <CartSheet open={cartOpen} onClose={()=>setCartOpen(false)} />
+      <MobileBar onOpenCart={()=>setCartOpen(true)} />
+    </main>
+  )
 }

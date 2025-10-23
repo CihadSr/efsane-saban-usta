@@ -1,0 +1,3 @@
+- /public/media/arka-plan.mp4
+- /public/media/galeri/1.jpg ... 4.jpg
+- /public/media/menu/*.jpg
