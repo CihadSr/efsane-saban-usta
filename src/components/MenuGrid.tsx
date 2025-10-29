@@ -1,8 +1,10 @@
+// src/components/MenuGrid.tsx
 'use client'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import type { Item } from '@/data/items'
 import useCart from '@/hooks/useCart'
+import useFavorites from '@/hooks/useFavorites'
 import AddToCartButton from '@/components/ui/AddToCartButton'
 
 type Props = { items: Item[]; onAdd: (id: string) => void }
@@ -50,28 +52,44 @@ function flyToCart(fromEl: HTMLElement | null) {
 
 export default function MenuGrid({ items, onAdd }: Props) {
   const { cart, add } = useCart()
-  const [pressed, setPressed] = useState<Record<string, boolean>>({})
+  const { isFav, toggle } = useFavorites()
+  const [added, setAdded] = useState<Record<string, boolean>>({})
 
-  const qtyOf = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const it of cart) m.set(it.id, it.qty)
-    return (id: string) => m.get(id) ?? 0
+  const qtyMap = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const c of cart) m[c.id] = c.qty
+    return m
   }, [cart])
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((it) => {
-        const qty = qtyOf(it.id)
+        const qty = qtyMap[it.id] || 0
+        const isAddedFlash = !!added[it.id]
+        const fav = isFav(it.id)
         return (
           <article key={it.id} className="rounded-2xl border border-white/10 bg-white/5 p-3 flex gap-3">
             <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-white/10">
-              <Image src={it.img} alt={it.name} fill className="object-cover" sizes="120px" priority={false} />
+              <Image src={it.img} alt={it.name} fill className="object-cover" sizes="120px" />
             </div>
 
             <div className="flex-1 min-w-0">
-              {/* İsim + rozet aynı satırda */}
+              {/* İsim + kalp + rozet aynı satırda */}
               <div className="flex items-center gap-2 min-w-0">
                 <h3 className="font-semibold truncate">{it.name}</h3>
+
+                <button
+                  type="button"
+                  onClick={()=>toggle(it.id)}
+                  aria-label={fav ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+                  className={`shrink-0 rounded-md px-1.5 py-0.5 border ${fav ? 'border-rose-500/40 bg-rose-500/15' : 'border-white/10 bg-white/5'} hover:bg-white/10`}
+                  title={fav ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+                >
+                  <svg viewBox="0 0 24 24" className={`h-4 w-4 ${fav ? 'text-rose-400' : 'text-white/70'}`} fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                    <path d="M12.1 21.35 10.55 20.03C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.09 4.81 13.76 4 15.5 4 18 4 20 6 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12.1 21.35Z"/>
+                  </svg>
+                </button>
+
                 {qty > 0 && (
                   <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
                     Sepette {qty} adet
@@ -95,8 +113,8 @@ export default function MenuGrid({ items, onAdd }: Props) {
                     const img = card?.querySelector<HTMLElement>('div.relative')
                     flyToCart(img || (e.currentTarget as HTMLElement))
                     if ('vibrate' in navigator) { try { (navigator as any).vibrate(12) } catch {} }
-                    setPressed((s) => ({ ...s, [it.id]: true }))
-                    setTimeout(() => setPressed((s) => ({ ...s, [it.id]: false })), 900)
+                    setAdded((s) => ({ ...s, [it.id]: true }))
+                    setTimeout(() => setAdded((s) => ({ ...s, [it.id]: false })), 900)
                   }}
                 />
               </div>

@@ -5,6 +5,7 @@ import Hero from '@/components/Hero'
 import Navbar from '@/components/Navbar'
 import MenuGrid from '@/components/MenuGrid'
 import CartSheet from '@/components/CartSheet'
+import FavoritesSheet from '@/components/FavoritesSheet'
 import MobileBar from '@/components/MobileBar'
 import { ITEMS, type Cat } from '@/data/items'
 import useCart from '@/hooks/useCart'
@@ -14,11 +15,12 @@ export default function Page(){
   const [filter, setFilter] = useState<'all'|Cat>('all')
   const filtered = useMemo(()=> filter==='all'? ITEMS : ITEMS.filter(i=>i.cat===filter), [filter])
   const [cartOpen, setCartOpen] = useState(false)
+  const [favsOpen, setFavsOpen] = useState(false)
 
   // SEO: tek bir görünmez H1 ile yerel sinyal
   const H1 = () => <h1 className="sr-only">Karaburun İskele’de ızgara et ve meze — Efsane Şaban Usta</h1>
 
-  // FAQ schema (opsiyonel ama faydalı)
+  // FAQ schema (opsiyonel)
   const faqJson = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -31,7 +33,7 @@ export default function Page(){
   return (
     <main className="pb-28">
       <H1 />
-      <Navbar onOpenCart={()=>setCartOpen(true)} />
+      <Navbar onOpenCart={()=>setCartOpen(true)} onOpenFavs={()=>setFavsOpen(true)} />
       <Hero />
 
       <section id="menu" className="scroll-mt-20 mx-auto max-w-7xl px-4 py-16">
@@ -48,8 +50,11 @@ export default function Page(){
 
         <div className="mt-6 flex gap-2 overflow-x-auto whitespace-nowrap snap-x snap-mandatory">
           {(['all','meze','et','kofte','sicak','tatli','icecek'] as const).map(k => (
-            <button key={k} onClick={()=>setFilter(k)}
-              className={`snap-start rounded-xl border border-white/10 px-4 py-2 text-sm md:text-base ${filter===k ? 'bg-white/10 ring-1 ring-white/20' : ''}`}>
+            <button
+              key={k}
+              onClick={()=>setFilter(k)}
+              className={`snap-start rounded-xl border border-white/10 px-4 py-2 text-sm md:text-base ${filter===k ? 'bg-white/10 ring-1 ring-white/20' : ''}`}
+            >
               {k==='all'?'Tümü':k[0].toUpperCase()+k.slice(1)}
             </button>
           ))}
@@ -116,6 +121,7 @@ export default function Page(){
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJson) }} />
 
       <CartSheet open={cartOpen} onClose={()=>setCartOpen(false)} />
+      <FavoritesSheet open={favsOpen} onClose={()=>setFavsOpen(false)} />
       <MobileBar onOpenCart={()=>setCartOpen(true)} />
     </main>
   )
