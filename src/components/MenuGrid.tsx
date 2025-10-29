@@ -1,4 +1,3 @@
-// src/components/MenuGrid.tsx
 'use client'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
@@ -8,10 +7,19 @@ import AddToCartButton from '@/components/ui/AddToCartButton'
 
 type Props = { items: Item[]; onAdd: (id: string) => void }
 
-/** Görseli #cart-anchor noktasına doğru küçük uçuş animasyonu (sade) */
+function getVisibleCartAnchor(): HTMLElement | null {
+  const cands = Array.from(document.querySelectorAll<HTMLElement>('[data-cart-anchor], #cart-anchor'))
+  const vpH = window.innerHeight || document.documentElement.clientHeight
+  const visible = cands.filter(el => {
+    const r = el.getBoundingClientRect()
+    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < vpH
+  })
+  return visible[0] || cands[0] || null
+}
+
 function flyToCart(fromEl: HTMLElement | null) {
   if (!fromEl) return
-  const cart = document.getElementById('cart-anchor')
+  const cart = getVisibleCartAnchor()
   if (!cart) return
   const from = fromEl.getBoundingClientRect()
   const to = cart.getBoundingClientRect()
@@ -24,84 +32,71 @@ function flyToCart(fromEl: HTMLElement | null) {
     height: `${from.height}px`,
     borderRadius: getComputedStyle(fromEl).borderRadius,
     pointerEvents: 'none',
-    zIndex: '50',
+    zIndex: '9999',
     opacity: '1',
-    transition: 'transform 420ms cubic-bezier(.2,8,2,1), opacity 420ms ease',
-  } as CSSStyleDeclaration)
+    transformOrigin: 'center',
+    willChange: 'transform, opacity',
+    transition: 'transform 420ms cubic-bezier(.2,.8,.2,1), opacity 420ms ease',
+  } as Partial<CSSStyleDeclaration>)
   document.body.appendChild(ghost)
   const dx = to.left + to.width / 2 - (from.left + from.width / 2)
   const dy = to.top + to.height / 2 - (from.top + from.height / 2)
   requestAnimationFrame(() => {
-    ghost.style.transform = `translate(${dx}px, ${dy}px) scale(.2)`
+    ghost.style.transform = `translate(${dx}px, ${dy}px) scale(.6)`
     ghost.style.opacity = '0.15'
   })
-  setTimeout(() => ghost.remove(), 440)
+  setTimeout(() => ghost.remove(), 460)
 }
 
 export default function MenuGrid({ items, onAdd }: Props) {
-  const { cart } = useCart()
-  const qtyMap = useMemo(() => {
-    const m: Record<string, number> = {}
-    for (const c of cart) m[c.id] = c.qty
-    return m
+  const { cart, add } = useCart()
+  const [pressed, setPressed] = useState<Record<string, boolean>>({})
+
+  const qtyOf = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const it of cart) m.set(it.id, it.qty)
+    return (id: string) => m.get(id) ?? 0
   }, [cart])
 
-  const [added, setAdded] = useState<Record<string, boolean>>({})
-
   return (
-    <div className="mt-8 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((it) => {
-        const qty = qtyMap[it.id] || 0
-        const isAddedFlash = !!added[it.id]
+        const qty = qtyOf(it.id)
         return (
-          <article
-            key={it.id}
-            className={`group rounded-2xl border p-4 bg-neutral-900/60 transition-colors
-              ${qty > 0 ? 'border-emerald-400/30 bg-emerald-900/10' : 'border-white/10'}`}
-          >
-            <div className="flex gap-3">
-              <div className="relative w-16 h-16 shrink-0">
-                <Image
-                  id={`img-${it.id}`}
-                  src={it.img}
-                  alt={it.name}
-                  fill
-                  className="rounded-xl object-cover border border-white/10"
-                  sizes="64px"
-                  priority={false}
-                />
-                {/* Köşede adet rozeti */}
+          <article key={it.id} className="rounded-2xl border border-white/10 bg-white/5 p-3 flex gap-3">
+            <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-white/10">
+              <Image src={it.img} alt={it.name} fill className="object-cover" sizes="120px" priority={false} />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              {/* İsim + rozet aynı satırda */}
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="font-semibold truncate">{it.name}</h3>
                 {qty > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 rounded-full bg-emerald-600 text-white text-[10px] px-2 py-1 shadow-sm animate-fadein"
-                    aria-live="polite"
-                    title={`Sepette ${qty} adet`}
-                  >
-                    {qty}
+                  <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
+                    Sepette {qty} adet
                   </span>
                 )}
               </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-base md:text-lg font-semibold truncate">{it.name}</h3>
-                  <span className="font-semibold text-sm md:text-base shrink-0">{it.price} TL</span>
-                </div>
-
-                {it.desc && <p className="mt-1 text-xs md:text-sm text-neutral-400 line-clamp-2">{it.desc}</p>}
+              {/* Fiyat + buton */}
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-emerald-400 font-bold whitespace-nowrap">{it.price.toFixed(2)}₺</span>
 
                 <AddToCartButton
-                  className={`mt-3 w-full ${isAddedFlash ? 'animate-pop' : ''}`}
-                  label={isAddedFlash ? 'Eklendi ✓' : (qty > 0 ? 'Bir tane daha ekle' : 'Sepete Ekle')}
-                  aria-label={`${it.name} sepete ekle`}
-                  title={qty > 0 ? `Sepette ${qty} adet var` : 'Sepete ekle'}
-                  onClick={() => {
+                  size="sm"
+                  aria-label="Sepete ekle"
+                  title="Sepete ekle"
+                  label={qty > 0 ? '1 daha ekle' : 'Sepete Ekle'}
+                  onClick={(e) => {
+                    add(it.id)
                     onAdd(it.id)
-                    const img = document.getElementById(`img-${it.id}`) as HTMLElement | null
-                    flyToCart(img)
+                    const card = (e.currentTarget as HTMLElement).closest('article')
+                    const img = card?.querySelector<HTMLElement>('div.relative')
+                    flyToCart(img || (e.currentTarget as HTMLElement))
                     if ('vibrate' in navigator) { try { (navigator as any).vibrate(12) } catch {} }
-                    setAdded((s) => ({ ...s, [it.id]: true }))
-                    setTimeout(() => setAdded((s) => ({ ...s, [it.id]: false })), 1100)
+                    setPressed((s) => ({ ...s, [it.id]: true }))
+                    setTimeout(() => setPressed((s) => ({ ...s, [it.id]: false })), 900)
                   }}
                 />
               </div>
