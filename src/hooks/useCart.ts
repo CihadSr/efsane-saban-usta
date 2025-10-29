@@ -14,6 +14,13 @@ export type OrderInfo = {
   note?: string
 }
 
+/**
+ * Aynı sekmede birden fazla useCart örneği varsa anlık senkron için
+ * hafif yayın/dinle mekanizması.
+ * Döngü engeli için bayrak.
+ */
+let __cartApplyingRemote = false
+
 export default function useCart() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [info, setInfo] = useState<OrderInfo>({
@@ -38,6 +45,48 @@ export default function useCart() {
   useEffect(() => { localStorage.setItem('cart', JSON.stringify(cart)) }, [cart])
   useEffect(() => { localStorage.setItem('orderInfo', JSON.stringify(info)) }, [info])
 
+  // Cross-tab (farklı sekmeler) senkron: storage eventi
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'cart') {
+        try {
+          const next = JSON.parse(e.newValue || '[]') as CartItem[]
+          __cartApplyingRemote = true
+          setCart(next)
+          __cartApplyingRemote = false
+        } catch {}
+      }
+      if (e.key === 'orderInfo') {
+        try {
+          const next = JSON.parse(e.newValue || 'null') as OrderInfo | null
+          if (next) setInfo(next)
+        } catch {}
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  // Same-tab (aynı sekme) senkron: yayınla
+  useEffect(() => {
+    if (__cartApplyingRemote) return
+    try { document.dispatchEvent(new CustomEvent('cart:sync', { detail: cart })) } catch {}
+  }, [cart])
+
+  // Same-tab senkron: dinle
+  useEffect(() => {
+    const h = (e: Event) => {
+      const ev = e as CustomEvent<CartItem[]>
+      const next = ev.detail
+      __cartApplyingRemote = true
+      setCart(prev => (prev === next ? prev : next))
+      __cartApplyingRemote = false
+    }
+    document.addEventListener('cart:sync', h as any)
+    return () => document.removeEventListener('cart:sync', h as any)
+  }, [])
+
+  // Actions
   function add(id: string) {
     const it = ITEMS.find(i => i.id === id)
     if (!it) return
@@ -47,17 +96,33 @@ export default function useCart() {
         const n = [...p]
         n[idx] = { ...n[idx], qty: n[idx].qty + 1 }
         return n
+        } else {
+        return [...p, { id, name: it.name, price: it.price, qty: 1 }]
       }
-      return [...p, { id, name: it.name, price: it.price, qty: 1 }]
     })
   }
   function inc(i: number) {
-    setCart(p => { const n = [...p]; n[i] = { ...n[i], qty: n[i].qty + 1 }; return n })
+    setCart(p => {
+      if (i < 0 || i >= p.length) return p
+      const n = [...p]
+      n[i] = { ...n[i], qty: n[i].qty + 1 }
+      return n
+    })
   }
   function dec(i: number) {
-    setCart(p => { const n = [...p]; n[i] = { ...n[i], qty: Math.max(1, n[i].qty - 1) }; return n })
+    setCart(p => {
+      if (i < 0 || i >= p.length) return p
+      const n = [...p]
+      const cur = n[i]
+      const nextQty = Math.max(0, cur.qty - 1)
+      if (nextQty === 0) return n.filter((_, idx) => idx !== i)
+      n[i] = { ...cur, qty: nextQty }
+      return n
+    })
   }
-  function rm(i: number) { setCart(p => p.filter((_, idx) => idx !== i)) }
+  function rm(i: number) {
+    setCart(p => p.filter((_, idx) => idx !== i))
+  }
 
   const total = useMemo(() => cart.reduce((s, i) => s + i.qty * i.price, 0), [cart])
   const count = useMemo(() => cart.reduce((s, i) => s + i.qty, 0), [cart]) // badge için
@@ -103,7 +168,7 @@ export default function useCart() {
     window.open(url, '_blank', 'noopener')
   }
 
-  // Global add event
+  // Global add event (varsa)
   useEffect(() => {
     const h = (e: any) => add(e.detail.id)
     document.addEventListener('cart:add', h as any)

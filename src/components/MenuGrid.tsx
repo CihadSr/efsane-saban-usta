@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import type { Item } from '@/data/items'
 import useCart from '@/hooks/useCart'
+import AddToCartButton from '@/components/ui/AddToCartButton'
 
 type Props = { items: Item[]; onAdd: (id: string) => void }
 
@@ -25,7 +26,7 @@ function flyToCart(fromEl: HTMLElement | null) {
     pointerEvents: 'none',
     zIndex: '50',
     opacity: '1',
-    transition: 'transform 420ms cubic-bezier(.2,.8,.2,1), opacity 420ms ease',
+    transition: 'transform 420ms cubic-bezier(.2,8,2,1), opacity 420ms ease',
   } as CSSStyleDeclaration)
   document.body.appendChild(ghost)
   const dx = to.left + to.width / 2 - (from.left + from.width / 2)
@@ -89,7 +90,11 @@ export default function MenuGrid({ items, onAdd }: Props) {
 
                 {it.desc && <p className="mt-1 text-xs md:text-sm text-neutral-400 line-clamp-2">{it.desc}</p>}
 
-                <button
+                <AddToCartButton
+                  className={`mt-3 w-full ${isAddedFlash ? 'animate-pop' : ''}`}
+                  label={isAddedFlash ? 'Eklendi ✓' : (qty > 0 ? 'Bir tane daha ekle' : 'Sepete Ekle')}
+                  aria-label={`${it.name} sepete ekle`}
+                  title={qty > 0 ? `Sepette ${qty} adet var` : 'Sepete ekle'}
                   onClick={() => {
                     onAdd(it.id)
                     const img = document.getElementById(`img-${it.id}`) as HTMLElement | null
@@ -98,16 +103,7 @@ export default function MenuGrid({ items, onAdd }: Props) {
                     setAdded((s) => ({ ...s, [it.id]: true }))
                     setTimeout(() => setAdded((s) => ({ ...s, [it.id]: false })), 1100)
                   }}
-                  className={`mt-3 w-full rounded-lg px-3 py-2 text-sm transition border will-change-transform
-                    ${isAddedFlash
-                      ? 'border-emerald-400/40 bg-emerald-700/20 text-emerald-100 animate-pop'
-                      : 'border-white/15 bg-white/5 hover:bg-white/10 active:scale-[0.98]'
-                    }`}
-                  aria-label={`${it.name} sepete ekle`}
-                  title={qty > 0 ? `Sepette ${qty} adet var` : 'Sepete ekle'}
-                >
-                  {isAddedFlash ? 'Eklendi ✓' : (qty > 0 ? 'Bir tane daha ekle' : 'Sepete Ekle')}
-                </button>
+                />
               </div>
             </div>
           </article>
