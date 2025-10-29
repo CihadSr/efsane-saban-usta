@@ -1,4 +1,4 @@
-// src/hooks/useCart.ts  // [UPDATED]
+// src/hooks/useCart.ts
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { ITEMS } from '@/data/items'
@@ -7,10 +7,10 @@ export type CartItem = { id: string; name: string; price: number; qty: number }
 export type OrderType = 'gel-al' | 'masada' | 'paket'
 export type OrderInfo = {
   name: string
-  phone: string                  // [UPDATED] zorunlu
+  phone: string
   type: OrderType
   table?: string
-  address?: string               // [UPDATED] paket için
+  address?: string
   note?: string
 }
 
@@ -25,7 +25,7 @@ export default function useCart() {
     note: '',
   })
 
-  // Load persisted
+  // Load
   useEffect(() => {
     try { setCart(JSON.parse(localStorage.getItem('cart') || '[]')) } catch { setCart([]) }
     try {
@@ -45,45 +45,34 @@ export default function useCart() {
       const idx = p.findIndex(x => x.id === id)
       if (idx > -1) {
         const n = [...p]
-        const item = { ...n[idx], qty: n[idx].qty + 1 }
-        n[idx] = item
+        n[idx] = { ...n[idx], qty: n[idx].qty + 1 }
         return n
       }
       return [...p, { id, name: it.name, price: it.price, qty: 1 }]
     })
   }
-
   function inc(i: number) {
-    setCart(p => {
-      const n = [...p]
-      const item = { ...n[i], qty: n[i].qty + 1 } // immutable
-      n[i] = item
-      return n
-    })
+    setCart(p => { const n = [...p]; n[i] = { ...n[i], qty: n[i].qty + 1 }; return n })
   }
-
   function dec(i: number) {
-    setCart(p => {
-      const n = [...p]
-      const item = { ...n[i], qty: Math.max(1, n[i].qty - 1) } // immutable
-      n[i] = item
-      return n
-    })
+    setCart(p => { const n = [...p]; n[i] = { ...n[i], qty: Math.max(1, n[i].qty - 1) }; return n })
   }
-
   function rm(i: number) { setCart(p => p.filter((_, idx) => idx !== i)) }
 
   const total = useMemo(() => cart.reduce((s, i) => s + i.qty * i.price, 0), [cart])
-  const waPhone = '905530625173'
+  const count = useMemo(() => cart.reduce((s, i) => s + i.qty, 0), [cart]) // badge için
 
-  // [UPDATED] basit TR telefon doğrulama: en az 10 rakam
+  // İşletme WhatsApp numarası (alıcı)
+  const waPhone = '905530625173' // 90 ile başlar, boşluk yok
+
+  // Basit TR telefon doğrulama
   function isValidPhone(v: string) {
     const digits = (v || '').replace(/\D/g, '')
     return digits.length >= 10
   }
 
   function openWA() {
-    // [UPDATED] zorunlu telefon kontrolü
+    // Sepette telefon zorunlu
     if (!isValidPhone(info.phone)) {
       window.alert('Lütfen geçerli bir telefon numarası girin.')
       return
@@ -102,12 +91,16 @@ export default function useCart() {
       info.note ? `Not: ${info.note}` : null,
     ].filter(Boolean).join('\n')
 
-    const items = cart.length ? cart.map(ci => `• ${ci.name} x ${ci.qty} = ${(ci.qty * ci.price).toFixed(0)} TL`).join('\n') : ''
+    const items = cart.length
+      ? cart.map(ci => `• ${ci.name} x ${ci.qty} = ${(ci.qty * ci.price).toFixed(0)} TL`).join('\n')
+      : ''
+
     const text = cart.length
       ? `Merhaba, EFSANE ŞABAN USTA siparişim:\n${head}\n${items}\nToplam: ${total.toFixed(0)} TL`
       : `Merhaba, sipariş vermek istiyorum.\n${head}`
+
     const url = `https://api.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
+    window.open(url, '_blank', 'noopener')
   }
 
   // Global add event
@@ -117,5 +110,5 @@ export default function useCart() {
     return () => document.removeEventListener('cart:add', h as any)
   }, [])
 
-  return { cart, total, add, inc, dec, rm, openWA, info, setInfo }
+  return { cart, total, count, add, inc, dec, rm, openWA, info, setInfo, isValidPhone }
 }

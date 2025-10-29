@@ -25,3 +25,10 @@ body { background:#0a0a0a; color:#fff; }
 
 /* mini rozet "pop" animasyonu */
 @keyframes badgepop { 0%{transform:scale(.6);opacity:.6} 100%{transform:scale(1);opacity:1} }
+
+@keyframes focusGlow {
+  0% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  35% { box-shadow: 0 0 0 6px rgba(16,185,129,.25); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+.animate-\[focusGlow_900ms_ease-out_1\]{ animation: focusGlow 900ms ease-out 1; }
