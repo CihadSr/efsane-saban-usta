@@ -49,7 +49,8 @@ export default function Page(){
         </div>
 
         <div className="mt-6 flex gap-2 overflow-x-auto whitespace-nowrap snap-x snap-mandatory">
-          {(['all','meze','et','kofte','sicak','tatli','icecek'] as const).map(k => (
+          {(['all','meze','et','deniz','kofte','sicak','icecek'] as const).map(k => (
+
             <button
               key={k}
               onClick={()=>setFilter(k)}
@@ -84,23 +85,52 @@ export default function Page(){
         />
       </section>
 
-      <section id="gallery" className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="text-3xl md:text-4xl font-bold">Galeri</h2>
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[1,2,3,4].map(n => (
-            <img key={n} src={`/media/galeri/${n}.jpg`} className="rounded-2xl h-40 w-full object-cover border border-white/10" alt="galeri" />
-          ))}
-        </div>
-      </section>
+<section id="gallery" className="mx-auto max-w-7xl px-4 py-16">
+  <h2 className="text-3xl md:text-4xl font-bold">Galeri</h2>
+<p className="mt-2 text-sm md:text-base text-white/60">
+  Taze seçimlerimize güveniyoruz ve lezzet konusunda iddialıyız. Herzaman bekleriz!
+</p>
+
+  {/** Veriyi nesne olarak tut */}
+  {/** src ve caption'ı eşleştir */}
+  {/** alt metinleri de doldur */}
+  {(() => {
+    const items = [
+      { src: "/media/galeri/1.jpg", caption: "Antrikot", alt: "Atölyede masa ve aletler" },
+      { src: "/media/galeri/2.jpg", caption: "Köfte", alt: "İlk prototip ürün" },
+      { src: "/media/galeri/3.jpg", caption: "Kokoreç", alt: "Takım üyeleri" },
+      { src: "/media/galeri/4.jpg", caption: "Şiş", alt: "Çekim sahne arkası" },
+      { src: "/media/galeri/5.jpg", caption: "Kalamar", alt: "Üretim bandı" },
+      { src: "/media/galeri/6.jpg", caption: "Çipura", alt: "Ürün lansmanı" },
+    ];
+    return (
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+        {items.map((it, i) => (
+          <figure key={i} className="rounded-2xl overflow-hidden border border-white/10 bg-black/20">
+            <img
+              src={it.src}
+              alt={it.alt}
+              className="h-40 w-full object-cover"
+              loading="lazy"
+            />
+            <figcaption className="px-3 py-2 text-sm text-white/80">
+              {it.caption}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    );
+  })()}
+</section>
 
       <section id="contact" className="bg-neutral-900/40 border-y border-white/10">
         <div className="mx-auto max-w-7xl px-4 py-16 grid lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2">
             <h2 className="text-3xl md:text-4xl font-bold">İletişim</h2>
             <div className="mt-4 space-y-3 text-neutral-300">
-              <p><strong>Adres:</strong> Karaburun, İskele Mevkii, İzmir</p>
+              <p><strong>Adres:</strong> İskele mah. İskele mevkii Fehim Aytekin CAD. Karaburun İzmir</p>
               <p><strong>Telefon:</strong> <a className="underline" href="tel:+905530625173">+90 553 062 51 73</a></p>
-              <p><strong>Çalışma saatleri:</strong> 09:00 – 00:00</p>
+              <p><strong>Çalışma saatleri:</strong> 09:00 – 03:00</p>
             </div>
             <div className="mt-6 flex gap-3">
               <a href="tel:+905530625173" className="rounded-2xl bg-sky-500 hover:bg-sky-600 px-5 py-3 font-semibold text-white">Hemen Ara</a>
